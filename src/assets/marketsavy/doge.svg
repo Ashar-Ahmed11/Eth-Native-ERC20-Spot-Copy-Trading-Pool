@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Doge">
+<g clip-path="url(#clip0_0_13)">
+<path id="Vector" d="M0 0H24V24H0V0Z" fill="var(--fill-0, #C3A634)"/>
+<path id="Vector_2" d="M9.46672 10.6878H13.3668V12.8747H9.46672V16.8112H11.9827C15.1963 16.8112 16.8335 15.0721 16.8335 12C16.8335 9.13774 15.1526 7.08423 11.9827 7.18876H9.46672V10.6878ZM7.30002 12.8747H6V10.6878H7.30002V5.00185H12.9092C16.9093 4.90825 18.9998 8.38107 18.9998 12C19.0258 15.7133 16.9271 19.0921 12.9092 18.9981H7.30002V12.8747Z" fill="var(--fill-0, white)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_13">
+<rect width="24" height="24" rx="12" fill="white"/>
+</clipPath>
+</defs>
+</svg>

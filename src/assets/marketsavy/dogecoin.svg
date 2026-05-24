@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Dogecoin">
+<g clip-path="url(#clip0_0_134)">
+<path id="Vector" d="M0 0H35V35H0V0Z" fill="var(--fill-0, #C3A634)"/>
+<path id="Vector_2" d="M13.9153 15.6001H19.8306V19.3998H13.9153V23.1996H17.7366C22.4353 23.1996 24.3184 21.6683 24.3184 17.4999C24.3184 13.6166 22.3722 11.6578 17.7366 11.8003H13.9153V15.6001ZM9.97177 19.3998H8V15.6001H9.97177V8.00245H19.0912C24.9414 7.87706 27.9997 12.5887 27.9997 17.4999C28.0371 22.5384 24.9671 27.1247 19.0912 26.9974H9.97177V19.3998Z" fill="var(--fill-0, white)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_134">
+<rect width="35" height="35" rx="17.5" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -1,0 +1,19 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Polygon">
+<g clip-path="url(#clip0_0_93)">
+<path id="Vector" d="M0 0H35V35H0V0Z" fill="var(--fill-0, #F0F3FA)"/>
+<path id="Vector_2" d="M6 10L11 13V28L6 25V10Z" fill="var(--fill-0, #2891F9)"/>
+<path id="Vector_3" d="M11 17L16 18V25L11 28V17ZM18 13L23 14V19L18 22V13Z" fill="var(--fill-0, #2BBDF7)"/>
+<path id="Vector_4" d="M6 10L18 17V22L6 15V10Z" fill="var(--fill-0, #2891F9)"/>
+<path id="Vector_5" d="M11 7L23 14L18 17L6 10L11 7Z" fill="var(--fill-0, #2B6DEF)"/>
+<path id="Vector_6" d="M19 10L24 13V28L19 25V10Z" fill="var(--fill-0, #2891F9)"/>
+<path id="Vector_7" d="M24 13L29 10V25L24 28V13Z" fill="var(--fill-0, #2BBDF7)"/>
+<path id="Vector_8" d="M24 7L29 10L24 13L19 10L24 7Z" fill="var(--fill-0, #2B6DEF)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_93">
+<rect width="35" height="35" rx="17.5" fill="white"/>
+</clipPath>
+</defs>
+</svg>

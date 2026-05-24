@@ -1,0 +1,28 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 737 505" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Images">
+<mask id="mask0_0_55" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="737" height="505">
+<rect id="Rectangle 73" width="737" height="505" rx="24" fill="var(--fill-0, #D9D9D9)"/>
+</mask>
+<g mask="url(#mask0_0_55)">
+<rect id="Rectangle 74" width="737" height="505" rx="24" fill="var(--fill-0, #560AB5)"/>
+<g id="Ellipse 14" filter="url(#filter0_f_0_55)">
+<ellipse cx="146" cy="147.5" rx="180" ry="171.5" fill="var(--fill-0, #8F43EE)" fill-opacity="0.55"/>
+</g>
+<g id="Img">
+<path d="M54 73C54 59.7452 64.7452 49 78 49H750C763.255 49 774 59.7452 774 73V547H54V73Z" fill="var(--fill-0, #ABABAB)"/>
+<path d="M54 73C54 59.7452 64.7452 49 78 49H750C763.255 49 774 59.7452 774 73V547H54V73Z" fill="url(#paint0_linear_0_55)" fill-opacity="0.2"/>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_f_0_55" x="-219" y="-209" width="730" height="713" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="92.5" result="effect1_foregroundBlur_0_55"/>
+</filter>
+<linearGradient id="paint0_linear_0_55" x1="414" y1="49" x2="413.997" y2="328.876" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="0.785332" stop-color="#5414A4"/>
+</linearGradient>
+</defs>
+</svg>
