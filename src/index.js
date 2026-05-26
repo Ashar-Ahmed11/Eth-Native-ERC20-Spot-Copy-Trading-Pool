@@ -5,14 +5,16 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from 'react-router-dom/cjs/react-router-dom.min';
 import AppState from './components/context/appState';
-
+import { Web3Provider } from './providers/web3provider';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
+  <Web3Provider>
   <BrowserRouter>
     <AppState>
       <App />
     </AppState>
   </BrowserRouter>
+  </Web3Provider>
 );
 
 // If you want to start measuring performance in your app, pass a function

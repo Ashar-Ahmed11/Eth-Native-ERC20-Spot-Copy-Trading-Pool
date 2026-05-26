@@ -1,9 +1,13 @@
 import './App.css';
 import { Switch, Route } from 'react-router-dom/cjs/react-router-dom.min';
 import HomePage from './components/home';
-
+import Navbar from './components/navbar';
+import PoolManager from './components/poolManager';
 function App() {
   return (
+    <>
+      <Navbar/>
+      <PoolManager/>
     <Switch>
       <Route path="/" exact>
         <HomePage />
@@ -15,6 +19,7 @@ function App() {
         <h1 className="text-center py-5">Users Component</h1>
       </Route>
     </Switch>
+    </>
   );
 }
 
