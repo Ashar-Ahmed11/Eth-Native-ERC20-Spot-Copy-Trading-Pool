@@ -8,12 +8,12 @@ const config = createConfig(
   getDefaultConfig({
     // Your dApps chains
     chains: [hardhat],
-    // transports: {
-    //   // RPC URL for each chain
-    //   [mainnet.id]: http(
-    //     `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_ID}`,
-    //   ),
-    // },
+    transports: {
+      // RPC URL for each chain
+      [hardhat.id]: http(
+        "http://127.0.0.1:8545",
+      ),
+    },
 
     // Required API Keys
     walletConnectProjectId: "f3c7012da9cbbfb2a0c0382d84c32c04",

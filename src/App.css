@@ -1186,7 +1186,140 @@ body {
     display: none;
   }
 
-  .footer-grid {
+.footer-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.pool-page {
+  max-width: 1450px;
+}
+
+.pool-title {
+  color: #1d2438;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.pool-subtitle {
+  color: #66708a;
+  font-size: 26px;
+}
+
+.pool-stat-card {
+  background: #fff;
+  border: 1px solid #e9ebf3;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+  min-height: 154px;
+  padding: 24px;
+}
+
+.pool-stat-label {
+  color: #5a6580;
+  font-size: 16px;
+}
+
+.pool-stat-value {
+  color: #1d2438;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pool-stat-note {
+  color: #707a91;
+  font-size: 15px;
+}
+
+.pool-section-title {
+  color: #1d2438;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.pool-search {
+  border-radius: 12px;
+  min-width: 290px;
+}
+
+.pool-sort {
+  border-radius: 12px;
+  min-width: 188px;
+}
+
+.pool-item-card {
+  border: 1px solid #e8ebf3;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+}
+
+.pool-meta-label {
+  color: #66708a;
+  font-size: 14px;
+}
+
+.pool-meta-value {
+  color: #1d2438;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.pool-address {
+  color: #1d2438;
+  font-size: 22px;
+}
+
+.pool-copy-btn {
+  background: #f3f4fa;
+  border: 1px solid #d9ddec;
+  border-radius: 8px;
+  color: #4a5a85;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 6px 10px;
+  transition: all 0.18s ease;
+}
+
+.pool-copy-btn:hover,
+.pool-copy-btn:focus {
+  background: #e8ecfb;
+  border-color: #c8d0ee;
+  color: #2d3e6a;
+}
+
+@media (max-width: 991px) {
+  .pool-title {
+    font-size: 40px;
+  }
+
+  .pool-subtitle {
+    font-size: 22px;
+  }
+
+  .pool-section-title {
+    font-size: 28px;
+  }
+
+  .pool-meta-value,
+  .pool-address {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .pool-title {
+    font-size: 32px;
+  }
+
+  .pool-subtitle {
+    font-size: 18px;
+  }
+
+  .pool-search,
+  .pool-sort {
+    min-width: 100%;
   }
 }

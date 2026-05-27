@@ -1,4 +1,4 @@
-import react from 'react';
+import { Link } from 'react-router-dom/cjs/react-router-dom.min';
 import BrandLogo from './homeSections/BrandLogo';
 import chevronDown from '../assets/marketsavy/frame7.svg';
 import { ConnectKitButton } from 'connectkit';
@@ -6,9 +6,9 @@ export default function Navbar() {
   return (
     <nav className="marketsavy-nav navbar navbar-expand-lg">
       <div className="container-fluid px-lg-5 px-3">
-        <a className="navbar-brand" href="#top" aria-label="MarketSavy home">
+        <Link className="navbar-brand" to="/" aria-label="MarketSavy home">
           <BrandLogo />
-        </a>
+        </Link>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#marketsavyNavbar">
           <span className="navbar-toggler-icon" />
         </button>
@@ -23,6 +23,9 @@ export default function Navbar() {
               <a className="nav-link d-flex align-items-center gap-1" href="#product">
                 Product <img className="nav-chevron" src={chevronDown} alt="" />
               </a>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/pool-manager">Pool Manager</Link>
             </li>
           </ul>
           <div className="d-flex gap-2">
