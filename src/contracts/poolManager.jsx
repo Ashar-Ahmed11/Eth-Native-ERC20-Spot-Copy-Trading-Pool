@@ -129,4 +129,4 @@ export const poolManagerAbi = [
   }
 ]
 
-export const poolManagerAddress = "0xb1F2C5c1ea2885278a1070350d12d3D8824265B0"
+export const poolManagerAddress = "0xB8fA00f68457E3234f22502A3a554Fe6A36ce259"

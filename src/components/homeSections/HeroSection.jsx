@@ -9,7 +9,7 @@ import lunaLogo from '../../assets/marketsavy/luna.svg';
 import tetherLogo from '../../assets/marketsavy/tether.svg';
 import uniswapLogo from '../../assets/marketsavy/uniswap.svg';
 import dogeLogo from '../../assets/marketsavy/doge.svg';
-import appImage from '../../assets/marketsavy/maskGroup.png';
+import appImage from '../../assets/marketsavy/tribalx-cover.png';
 
 const tickerItems = [
   { icon: ethLogo, name: 'Ethereum', value: '757.36 USD', change: '+0.35%', up: true },
@@ -33,7 +33,7 @@ function StoreBadge({ label }) {
 
 function CryptoTicker() {
   return (
-    <div className="crypto-ticker">
+    <div className="crypto-ticker position-relative">
       <div className="ticker-track">
         {[...tickerItems, ...tickerItems].map((item, index) => (
           <div className="ticker-item" key={`${item.name}-${index}`}>
@@ -72,7 +72,7 @@ export default function HeroSection() {
           </div>
         </div>
         <div className="hero-preview mx-auto">
-          <img src={appImage} alt="MarketSavy trading dashboard preview" />
+          <img src={appImage} alt="TribalX copy trading dApp cover" />
         </div>
       </div>
       <CryptoTicker />

@@ -9,7 +9,8 @@ export default function BrandLogo({ footer = false }) {
       <span className="brand-mark">
         <img src={footer ? footerMark : brandMark} alt="" />
       </span>
-      <img className="brand-word" src={footer ? footerWord : brandWord} alt="MarketSavy" />
+      {/* <img className="brand-word" src={footer ? footerWord : brandWord} alt="MarketSavy" /> */}
+      <span className='fw-bold'>TribalX</span>
     </div>
   );
 }

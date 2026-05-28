@@ -1,4 +1,5 @@
-import appImage from '../../assets/marketsavy/maskGroup.png';
+import ctaPrimaryImage from '../../assets/marketsavy/tribalx-cta-cover.png';
+import ctaSecondaryImage from '../../assets/marketsavy/tribalx-install-cover.png';
 
 export default function CTASection() {
   return (
@@ -14,8 +15,8 @@ export default function CTASection() {
           </div>
           <div className="col-lg-6">
             <div className="cta-art">
-              <img src={appImage} alt="MarketSavy app analytics" />
-              <div />
+              <img className="cta-art-primary" src={ctaPrimaryImage} alt="TribalX copy trading network growth cover" />
+              {/* <img className="cta-art-secondary" src={ctaSecondaryImage} alt="TribalX onboarding preview" /> */}
             </div>
           </div>
         </div>

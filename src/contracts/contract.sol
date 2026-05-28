@@ -205,7 +205,13 @@ contract Pool is UniswapV3ETHSwapper {
             memberTokenBalance[_poolAdmin] +=_depositTokenAmount;
     }
     
-
+    function getAllTrades() public view returns(tradeToken[] memory) {
+             tradeToken[] memory totalTradesOfPool = new tradeToken[](tradeTokens);
+             for(uint256 i=1;i<=tradeTokens;i++){
+                 totalTradesOfPool[i-1] = tradeTokenById[i];
+             }
+             return totalTradesOfPool;
+    }
 
     function depositToken(uint256 _depositTokenAmount)  public{
          IERC20 depositToken = IERC20(poolToken);

@@ -1,5 +1,6 @@
 import coinBtc from '../../assets/marketsavy/logo.svg';
 import chartUp from '../../assets/marketsavy/chart.svg';
+import installCover from '../../assets/marketsavy/tribalx-install-cover.png';
 
 function TradeTicket() {
   return (
@@ -50,6 +51,7 @@ export default function InstallSection() {
           </div>
           <div className="col-lg-7">
             <div className="install-visual">
+              <img className="install-cover-image opacity-75" src={installCover} alt="TribalX onboarding and wallet setup cover" />
               <TradeTicket />
             </div>
           </div>

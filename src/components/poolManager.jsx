@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom/cjs/react-router-dom.min'
 import { useAccount } from 'wagmi'
 import { useBalance, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, isAddress, formatEther } from 'viem'
@@ -308,6 +309,11 @@ const PoolManager = () => {
                       </button>
                     </p>
                   </div>
+                </div>
+                <div className="mt-4 pt-3 border-top">
+                  <Link className="btn btn-outline-primary w-100" to={`/pool/${pool.poolAddress}`}>
+                    View Details
+                  </Link>
                 </div>
               </div>
             </div>

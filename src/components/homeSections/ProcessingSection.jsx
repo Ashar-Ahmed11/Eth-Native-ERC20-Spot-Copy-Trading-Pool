@@ -1,4 +1,4 @@
-import appImage from '../../assets/marketsavy/maskGroup.png';
+import appImage from '../../assets/marketsavy/tribalx-processing-cover.png';
 import arrowUpIcon from '../../assets/marketsavy/arrowRightUp.svg';
 
 const links = ['Market Overview', 'Latest News', 'Payment & Payouts', 'Income', 'Converter'];
@@ -20,8 +20,8 @@ export default function ProcessingSection() {
             </div>
           </div>
           <div className="col-lg-7">
-            <div className="dashboard-panel">
-              <img src={appImage} alt="Crypto exchange analytics dashboard" />
+            <div className="">
+              <img src={appImage} className="card-img-top rounded-5" style={{opacity:"85%"}} alt="Crypto exchange analytics dashboard" />
             </div>
           </div>
         </div>

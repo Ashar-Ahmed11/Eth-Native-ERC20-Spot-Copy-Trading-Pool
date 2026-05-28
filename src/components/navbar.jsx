@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
 import BrandLogo from './homeSections/BrandLogo';
 import chevronDown from '../assets/marketsavy/frame7.svg';
 import { ConnectKitButton } from 'connectkit';
 export default function Navbar() {
+  const location = useLocation()
+  const isHomePage = location.pathname === '/'
+
   return (
-    <nav className="marketsavy-nav navbar navbar-expand-lg">
+    <nav className={`marketsavy-nav navbar navbar-expand-lg ${isHomePage ? 'marketsavy-nav-home' : ''}`}>
       <div className="container-fluid px-lg-5 px-3">
         <Link className="navbar-brand" to="/" aria-label="MarketSavy home">
           <BrandLogo />
