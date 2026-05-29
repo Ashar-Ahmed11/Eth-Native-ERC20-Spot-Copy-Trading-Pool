@@ -61,8 +61,18 @@ const PoolManager = () => {
       enabled: !!connectedaddress?.address && tokenAddressIsValid && amountIsValid
     }
   })
+  const { data: userTokenBalance } = useReadContract({
+    abi: erc20Abi,
+    address: tokenAddressIsValid ? tokenAddress : undefined,
+    functionName: 'balanceOf',
+    args: [connectedaddress?.address],
+    query: {
+      enabled: !!connectedaddress?.address && tokenAddressIsValid
+    }
+  })
 
   const isApproved = amountIsValid && tokenAddressIsValid && (allowanceValue || 0n) >= depositAmountValue
+  const availableTokenBalance = userTokenBalance || 0n
 
   useEffect(() => {
     const fetchTokenList = async () => {
@@ -151,6 +161,8 @@ const PoolManager = () => {
     if (sortOrder === 'oldest') return a.poolAddress.localeCompare(b.poolAddress)
     return b.poolAddress.localeCompare(a.poolAddress)
   })
+
+  console.log("all pools data", allPoolsList);
 
   return (
     <main className="container py-4 pool-page">
@@ -311,8 +323,9 @@ const PoolManager = () => {
                   </div>
                 </div>
                 <div className="mt-4 pt-3 border-top">
-                  <Link className="btn btn-outline-primary w-100" to={`/pool/${pool.poolAddress}`}>
-                    View Details
+                  <Link className="btn pool-details-btn w-100 d-flex align-items-center justify-content-between" to={`/pool/${pool.poolAddress}`}>
+                    <span>View Details</span>
+                    <span className="pool-details-arrow" aria-hidden="true">→</span>
                   </Link>
                 </div>
               </div>
@@ -351,6 +364,16 @@ const PoolManager = () => {
                       onChange={(e) => setDepositTokenAmount(e.target.value)}
                       placeholder="Amount in wei"
                     />
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <small className="text-muted">Your token balance: {availableTokenBalance.toString()}</small>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setDepositTokenAmount(availableTokenBalance.toString())}
+                      >
+                        Max
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">

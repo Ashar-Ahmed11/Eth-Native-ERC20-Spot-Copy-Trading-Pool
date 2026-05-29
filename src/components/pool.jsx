@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom/cjs/react-router-dom.min'
-import { useReadContract } from 'wagmi'
-import { formatEther } from 'viem'
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import { formatEther, parseUnits } from 'viem'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { poolAbi } from '../contracts/pool'
+import { erc20Abi } from '../contracts/erc20'
+import { useBlockNumber } from 'wagmi'
+import { useWatchBlockNumber } from 'wagmi'
 
 const shortenAddress = (address = '') => {
   if (!address) return '-'
@@ -18,7 +21,36 @@ const statusLabel = (status) => {
 
 const Pool = () => {
   const { pooladdress } = useParams()
+  const connectedaddress = useAccount()
   const [tokenMetaMap, setTokenMetaMap] = useState({})
+  const [lastAction, setLastAction] = useState('')
+  const [showTradeModal, setShowTradeModal] = useState(false)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showDcaModal, setShowDcaModal] = useState(false)
+  const [showSellModal, setShowSellModal] = useState(false)
+  const [tradeAmount, setTradeAmount] = useState('')
+  const [tradeTokenAddress, setTradeTokenAddress] = useState('')
+  const [depositAmount, setDepositAmount] = useState('')
+  const [dcaAmount, setDcaAmount] = useState('')
+  const [selectedTradeId, setSelectedTradeId] = useState(null)
+
+  const { data: txHash, writeContract, error: writeError, isPending: isWritePending } = useWriteContract()
+  const { isSuccess: isConfirmed, isLoading: isConfirming } = useWaitForTransactionReceipt({
+    hash: txHash,
+    confirmations: 1
+  })
+
+const { data: blockNumber } = useBlockNumber({ watch: true })
+
+// console.log("the current block number", blockNumber);
+
+  useWatchBlockNumber({
+        onBlockNumber(blockNumber) {
+          refetchPoolTokenAmount()
+          console.log('New block:', blockNumber)
+        }
+    })
+
 
   const { data: poolId } = useReadContract({
     abi: poolAbi,
@@ -38,10 +70,30 @@ const Pool = () => {
     functionName: 'poolToken'
   })
 
-  const { data: poolTokenAmount } = useReadContract({
+  const { data: poolTokenAmount,refetch: refetchPoolTokenAmount } = useReadContract({
     abi: poolAbi,
     address: pooladdress,
     functionName: 'poolTokenAmount'
+  })
+  const { data: userPoolTokenBalance } = useReadContract({
+    abi: erc20Abi,
+    address: poolToken,
+    functionName: 'balanceOf',
+    args: [connectedaddress?.address],
+    query: {
+      enabled: !!poolToken && !!connectedaddress?.address
+    }
+  })
+  const isDepositAmountValid = !!depositAmount && /^\d+$/.test(depositAmount)
+  const depositAmountValue = isDepositAmountValid ? parseUnits(depositAmount, 0) : 0n
+  const { data: poolAllowance, refetch: refetchAllowance } = useReadContract({
+    abi: erc20Abi,
+    address: poolToken,
+    functionName: 'allowance',
+    args: [connectedaddress?.address, pooladdress],
+    query: {
+      enabled: !!poolToken && !!connectedaddress?.address && isDepositAmountValid
+    }
   })
 
   const { data: membersOfPools } = useReadContract({
@@ -56,7 +108,7 @@ const Pool = () => {
     functionName: 'tradeTokens'
   })
 
-  const { data: allTrades, isPending: isTradesLoading } = useReadContract({
+  const { data: allTrades, isPending: isTradesLoading, refetch: refetchTrades } = useReadContract({
     abi: poolAbi,
     address: pooladdress,
     functionName: 'getAllTrades'
@@ -79,10 +131,105 @@ const Pool = () => {
     fetchTokenList()
   }, [])
 
+  useEffect(() => {
+    if (!writeError) return
+    toast.error(writeError.shortMessage || writeError.message || 'Transaction failed')
+  }, [writeError])
+
+  useEffect(() => {
+    if (!isConfirmed) return
+    if (lastAction === 'trade') {
+      toast.success('Trade created successfully')
+      setShowTradeModal(false)
+      setTradeAmount('')
+      setTradeTokenAddress('')
+    }
+    if (lastAction === 'deposit') {
+      toast.success('Deposit successful')
+      setShowDepositModal(false)
+      setDepositAmount('')
+    }
+    if (lastAction === 'approveDeposit') {
+      toast.success('Deposit amount approved')
+      refetchAllowance()
+    }
+    if (lastAction === 'dca') {
+      toast.success('DCA executed successfully')
+      setShowDcaModal(false)
+      setDcaAmount('')
+      setSelectedTradeId(null)
+    }
+    if (lastAction === 'sell') {
+      toast.success('Trade closed successfully')
+      setShowSellModal(false)
+      setSelectedTradeId(null)
+    }
+    refetchTrades()
+  }, [isConfirmed, lastAction, refetchTrades, refetchAllowance])
+
   const poolTokenMeta = poolToken ? tokenMetaMap[poolToken.toLowerCase()] : null
+  const isPoolAdmin = !!connectedaddress?.address && !!poolAdmin && connectedaddress.address.toLowerCase() === poolAdmin.toLowerCase()
+  // console.log("get all trades data", allTrades);
+  const handleTrade = () => {
+    if (!tradeAmount || !tradeTokenAddress) return
+    setLastAction('trade')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'trade',
+      args: [tradeTokenAddress, parseUnits(tradeAmount, 0)]
+    })
+  }
+
+  const handleDeposit = () => {
+    if (!depositAmount) return
+    setLastAction('deposit')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'depositToken',
+      args: [parseUnits(depositAmount, 0)]
+    })
+  }
+
+  const handleApproveDeposit = () => {
+    if (!isDepositAmountValid) return
+    setLastAction('approveDeposit')
+    writeContract({
+      abi: erc20Abi,
+      address: poolToken,
+      functionName: 'approve',
+      args: [pooladdress, depositAmountValue]
+    })
+  }
+
+  const handleDca = () => {
+    if (!dcaAmount || selectedTradeId === null) return
+    setLastAction('dca')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'dca',
+      args: [parseUnits(String(selectedTradeId), 0), parseUnits(dcaAmount, 0)]
+    })
+  }
+
+  const handleSell = () => {
+    if (selectedTradeId === null) return
+    setLastAction('sell')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'sellToken',
+      args: [parseUnits(String(selectedTradeId), 0)]
+    })
+  }
 
   const totalTradeBalance = (allTrades || []).reduce((acc, trade) => acc + (trade?.tokenTotalBalance || 0n), 0n)
   const ongoingTrades = (allTrades || []).filter((trade) => trade?.tradeStatus === 0).length
+  const poolAvailableBalance = poolTokenAmount || 0n
+  const userAvailableBalance = userPoolTokenBalance || 0n
+  const isDepositApproved = isDepositAmountValid && (poolAllowance || 0n) >= depositAmountValue
 
   return (
     <main className="container py-4 pool-page">
@@ -92,7 +239,15 @@ const Pool = () => {
           <h1 className="pool-title mb-1">Pool Details</h1>
           <p className="pool-subtitle mb-0">Monitor pool stats and trades</p>
         </div>
-        <Link className="btn btn-outline-primary px-4 py-2" to="/pool-manager">Back to Pools</Link>
+        <div className="d-flex align-items-center gap-2">
+          {isPoolAdmin && (
+            <>
+              <button className="btn btn-primary px-4 py-2" onClick={() => setShowTradeModal(true)}>Trade</button>
+              <button className="btn btn-outline-primary px-4 py-2" onClick={() => setShowDepositModal(true)}>Deposit</button>
+            </>
+          )}
+          <Link className="btn btn-outline-primary px-4 py-2" to="/pool-manager">Back to Pools</Link>
+        </div>
       </div>
 
       <div className="card pool-item-card mb-4">
@@ -226,12 +381,193 @@ const Pool = () => {
                       <p className="pool-address mb-0">{shortenAddress(trade.tokenAddress)}</p>
                     </div>
                   </div>
+                  {isPoolAdmin && trade.tradeStatus === 0 && (
+                    <div className="pool-trade-actions mt-4 pt-3 border-top">
+                      <button
+                        className="btn pool-action-btn pool-action-btn-dca"
+                        onClick={() => {
+                          setSelectedTradeId(index + 1)
+                          setShowDcaModal(true)
+                        }}
+                      >
+                        DCA
+                      </button>
+                      <button
+                        className="btn pool-action-btn pool-action-btn-sell"
+                        onClick={() => {
+                          setSelectedTradeId(index + 1)
+                          setShowSellModal(true)
+                        }}
+                      >
+                        Sell
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )
         })}
       </div>
+
+      {showTradeModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Create Trade</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowTradeModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">Trade Token Address</label>
+                    <input className="form-control" value={tradeTokenAddress} onChange={(e) => setTradeTokenAddress(e.target.value)} placeholder="0x..." />
+                  </div>
+                  <div className="mb-1">
+                    <label className="form-label">Trade Amount</label>
+                    <input className="form-control" value={tradeAmount} onChange={(e) => setTradeAmount(e.target.value)} placeholder="Amount in wei" />
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <small className="text-muted">Available pool balance: {poolAvailableBalance.toString()}</small>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setTradeAmount(poolAvailableBalance.toString())}
+                      >
+                        Max
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowTradeModal(false)}>Close</button>
+                  <button type="button" className="btn btn-primary" onClick={handleTrade} disabled={isWritePending || isConfirming}>
+                    {isWritePending || isConfirming ? 'Creating...' : 'Create'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowTradeModal(false)} />
+        </>
+      )}
+
+      {showDepositModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Deposit Token</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowDepositModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <div className="mb-1">
+                    <label className="form-label">Deposit Token Amount</label>
+                    <input className="form-control" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="Amount in wei" />
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <small className="text-muted">Your token balance: {userAvailableBalance.toString()}</small>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setDepositAmount(userAvailableBalance.toString())}
+                      >
+                        Max
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowDepositModal(false)}>Close</button>
+                  {isDepositApproved ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleDeposit}
+                      disabled={!isDepositAmountValid || isWritePending || isConfirming}
+                    >
+                      {isWritePending || isConfirming ? 'Depositing...' : 'Deposit'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-warning"
+                      onClick={handleApproveDeposit}
+                      disabled={!isDepositAmountValid || isWritePending || isConfirming}
+                    >
+                      {isWritePending || isConfirming ? 'Approving...' : 'Approve'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowDepositModal(false)} />
+        </>
+      )}
+
+      {showDcaModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Dollar Cost Average</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowDcaModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <div className="mb-1">
+                    <label className="form-label">Trade Amount</label>
+                    <input className="form-control" value={dcaAmount} onChange={(e) => setDcaAmount(e.target.value)} placeholder="Amount in wei" />
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <small className="text-muted">Available pool balance: {poolAvailableBalance.toString()}</small>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setDcaAmount(poolAvailableBalance.toString())}
+                      >
+                        Max
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowDcaModal(false)}>Close</button>
+                  <button type="button" className="btn btn-primary" onClick={handleDca} disabled={isWritePending || isConfirming}>
+                    {isWritePending || isConfirming ? 'Submitting...' : 'Create'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowDcaModal(false)} />
+        </>
+      )}
+
+      {showSellModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Close Trade</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowSellModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <p className="mb-0">Are you sure you want to close the trade?</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSellModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={handleSell} disabled={isWritePending || isConfirming}>
+                    {isWritePending || isConfirming ? 'Closing...' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowSellModal(false)} />
+        </>
+      )}
     </main>
   )
 }

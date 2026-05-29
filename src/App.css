@@ -1315,6 +1315,70 @@ body {
   color: #2d3e6a;
 }
 
+.pool-trade-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pool-action-btn {
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 40px;
+  transition: all 0.18s ease;
+}
+
+.pool-action-btn-dca {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3348c7;
+}
+
+.pool-action-btn-dca:hover,
+.pool-action-btn-dca:focus {
+  background: #dfe7ff;
+  border-color: #a9b9ff;
+  color: #2236a5;
+}
+
+.pool-action-btn-sell {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.pool-action-btn-sell:hover,
+.pool-action-btn-sell:focus {
+  background: #ffe4e8;
+  border-color: #fda4af;
+  color: #9f1239;
+}
+
+.pool-details-btn {
+  background: #f3f0ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+  color: #5b21b6;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 46px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.pool-details-btn:hover,
+.pool-details-btn:focus {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #4c1d95;
+}
+
+.pool-details-arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
 @media (max-width: 991px) {
   .pool-title {
     font-size: 40px;
