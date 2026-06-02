@@ -19,44 +19,6 @@ export const poolManagerAbi = [
   },
   {
     "inputs": [],
-    "name": "getAllPools",
-    "outputs": [
-      {
-        "internalType": "string[5]",
-        "name": "",
-        "type": "string[5]"
-      },
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      },
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      },
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getAllPoolsStruct",
     "outputs": [
       {
@@ -84,6 +46,11 @@ export const poolManagerAbi = [
           {
             "internalType": "uint256",
             "name": "poolTotalTrades",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "status",
             "type": "uint256"
           }
         ],
@@ -129,4 +96,4 @@ export const poolManagerAbi = [
   }
 ]
 
-export const poolManagerAddress = "0xe5e56701f7e241cc8C598615C4FBf6EF1ECf27B6"
+export const poolManagerAddress = "0x715C13e76D2F375c8eE1F9F0a5690Ff79a00Df10"

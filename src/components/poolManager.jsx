@@ -15,11 +15,27 @@ const shortenAddress = (address = '') => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+const poolStatusMeta = (status) => {
+  if (Number(status || 0) === 1) {
+    return {
+      label: 'Closed',
+      className: 'bg-secondary-subtle text-secondary-emphasis',
+    }
+  }
+
+  return {
+    label: 'Active',
+    className: 'bg-success-subtle text-success-emphasis',
+  }
+}
+
 const PoolManager = () => {
   const connectedaddress = useAccount()
   const [showModal, setShowModal] = useState(false)
   const [tokenAddress, setTokenAddress] = useState('')
   const [depositTokenAmount, setDepositTokenAmount] = useState('')
+  const [showTokenDropdown, setShowTokenDropdown] = useState(false)
+  const [tokenSearch, setTokenSearch] = useState('')
   const [searchText, setSearchText] = useState('')
   const [sortOrder, setSortOrder] = useState('newest')
   const [lastAction, setLastAction] = useState('')
@@ -92,6 +108,12 @@ const PoolManager = () => {
   }, [])
 
   useEffect(() => {
+    if (showModal) return
+    setShowTokenDropdown(false)
+    setTokenSearch('')
+  }, [showModal])
+
+  useEffect(() => {
     if (!error) return
     toast.error(error.shortMessage || error.message || 'Transaction failed')
   }, [error])
@@ -142,6 +164,24 @@ const PoolManager = () => {
       toast.error('Copy failed')
     }
   }
+
+  const tokenOptions = Object.values(tokenMetaMap).sort((a, b) => {
+    const left = (a.symbol || a.name || '').toLowerCase()
+    const right = (b.symbol || b.name || '').toLowerCase()
+    return left.localeCompare(right)
+  })
+
+  const filteredTokenOptions = tokenOptions.filter((token) => {
+    if (!tokenSearch.trim()) return true
+    const query = tokenSearch.toLowerCase()
+    return (
+      token.symbol?.toLowerCase().includes(query) ||
+      token.name?.toLowerCase().includes(query) ||
+      token.address?.toLowerCase().includes(query)
+    )
+  })
+
+  const selectedTokenMeta = tokenAddress ? tokenMetaMap[tokenAddress.toLowerCase()] : null
 
   const allPoolsList = allPools || []
   const totalLiquidity = Number(formatEther( allPoolsList.reduce((acc, pool) => acc + (pool?.poolTokenAmount || 0n), 0n))).toFixed(2)
@@ -237,6 +277,7 @@ const PoolManager = () => {
       <div className="row g-3">
         {displayedPools.map((pool, index) => {
           const poolTokenMeta = tokenMetaMap[pool.poolToken.toLowerCase()]
+          const poolStatus = poolStatusMeta(pool.status)
           return (
           <div className="col-12 col-lg-6" key={`${pool.poolAddress}-${index}`}>
             <div className="card h-100 pool-item-card">
@@ -259,7 +300,7 @@ const PoolManager = () => {
                     <div>
                       <h5 className="mb-1">{poolTokenMeta?.symbol || shortenAddress(pool.poolToken)}</h5>
                       <p className="pool-meta-label mb-0">{poolTokenMeta?.name || 'Unknown Token'}</p>
-                      <span className="badge bg-success-subtle text-success-emphasis px-3 py-2 mt-2">Active</span>
+                      <span className={`badge px-3 py-2 mt-2 ${poolStatus.className}`}>{poolStatus.label}</span>
                     </div>
                   </div>
                   <span className="badge text-bg-light text-primary px-3 py-2">Pool #{index + 1}</span>
@@ -346,14 +387,77 @@ const PoolManager = () => {
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label">Token Address</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={tokenAddress}
-                      onChange={(e) => setTokenAddress(e.target.value)}
-                      placeholder="0x..."
-                    />
+                    <label className="form-label">Token</label>
+                    <div className="position-relative">
+                      <button
+                        type="button"
+                        className="form-select text-start pool-token-dropdown-toggle"
+                        onClick={() => setShowTokenDropdown((prev) => !prev)}
+                      >
+                        {selectedTokenMeta ? (
+                          <span className="d-flex align-items-center gap-2">
+                            {selectedTokenMeta.logoURI ? (
+                              <img
+                                src={selectedTokenMeta.logoURI}
+                                alt={selectedTokenMeta.symbol || 'token'}
+                                width="24"
+                                height="24"
+                                className="rounded-circle border"
+                              />
+                            ) : (
+                              <span className="token-picker-avatar" />
+                            )}
+                            <span>
+                              <span className="d-block">{selectedTokenMeta.symbol || shortenAddress(tokenAddress)}</span>
+                              <small className="d-block text-muted">{selectedTokenMeta.name || tokenAddress}</small>
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted">Select a token</span>
+                        )}
+                        <span className={`pool-token-dropdown-arrow ${showTokenDropdown ? 'open' : ''}`} aria-hidden="true" />
+                      </button>
+                      {showTokenDropdown && (
+                        <div className="token-picker-menu shadow">
+                          <div className="p-2 border-bottom">
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              placeholder="Search symbols, names, or addresses"
+                              value={tokenSearch}
+                              onChange={(e) => setTokenSearch(e.target.value)}
+                            />
+                          </div>
+                          <div className="token-picker-list">
+                            {filteredTokenOptions.map((token) => (
+                              <button
+                                key={token.address}
+                                type="button"
+                                className={`token-picker-item ${tokenAddress?.toLowerCase() === token.address.toLowerCase() ? 'active' : ''}`}
+                                onClick={() => {
+                                  setTokenAddress(token.address)
+                                  setShowTokenDropdown(false)
+                                  setTokenSearch('')
+                                }}
+                              >
+                                {token.logoURI ? (
+                                  <img src={token.logoURI} alt={token.symbol || 'token'} width="28" height="28" className="rounded-circle border" />
+                                ) : (
+                                  <span className="token-picker-avatar" />
+                                )}
+                                <span className="token-picker-text">
+                                  <span className="token-picker-symbol">{token.symbol || 'Unknown'}</span>
+                                  <span className="token-picker-name">{token.name || token.address}</span>
+                                </span>
+                              </button>
+                            ))}
+                            {filteredTokenOptions.length === 0 && (
+                              <div className="p-3 text-muted small">No matching tokens found.</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="mb-1">
                     <label className="form-label">Deposit Token Amount</label>

@@ -180,6 +180,11 @@ contract Pool is UniswapV3ETHSwapper {
     uint256 public membersOfPools;
     mapping(uint256 => address) public memberAddress;
     mapping(address => uint256) public memberTokenBalance;
+
+    enum poolStatus { Active, Closed }
+    poolStatus public status;
+
+
      enum Status { Ongoing, Finished }
 
     uint256 public tradeTokens;
@@ -203,6 +208,11 @@ contract Pool is UniswapV3ETHSwapper {
             membersOfPools++;
             memberAddress[membersOfPools] = _poolAdmin;
             memberTokenBalance[_poolAdmin] +=_depositTokenAmount;
+            status = poolStatus.Active;
+    }
+    modifier isPoolActive{
+        require(status==poolStatus.Active,"Sorry, the pool is closed");
+        _;
     }
     
     function getAllTrades() public view returns(tradeToken[] memory) {
@@ -213,7 +223,7 @@ contract Pool is UniswapV3ETHSwapper {
              return totalTradesOfPool;
     }
 
-    function depositToken(uint256 _depositTokenAmount)  public{
+    function depositToken(uint256 _depositTokenAmount) isPoolActive  public{
          IERC20 depositToken = IERC20(poolToken);
          bool isMember = false;
         for(uint i=1;i<=membersOfPools;i++){
@@ -236,7 +246,7 @@ contract Pool is UniswapV3ETHSwapper {
         
     }
 // 0x514910771AF9Ca656af840dff83E8264EcF986CA
-    function trade(address _tradeToken, uint256 _tradeAmount) public payable {
+    function trade(address _tradeToken, uint256 _tradeAmount) isPoolActive public payable {
             require(msg.sender==poolAdmin,"You are not the admin of the pool");
           // must approve pooltoken to the contract
             IERC20 tradedToken = IERC20(_tradeToken);
@@ -267,7 +277,7 @@ contract Pool is UniswapV3ETHSwapper {
 
     }
 
-     function dca(uint256 tradeTokenId, uint256 _tradeAmount) public payable {
+     function dca(uint256 tradeTokenId, uint256 _tradeAmount) isPoolActive public payable {
             require(msg.sender==poolAdmin,"You are not the admin of the pool");
           // must approve pooltoken to the contract
 
@@ -305,7 +315,7 @@ contract Pool is UniswapV3ETHSwapper {
                 poolTokenAmount-=_tradeAmount;
 
     }
-         function sellToken(uint256 tradeTokenId) public payable {
+         function sellToken(uint256 tradeTokenId) isPoolActive public payable {
              IERC20 poolTokenBalance = IERC20(poolToken);
                 uint256 previousBalance = poolTokenBalance.balanceOf(address(this));
 
@@ -338,10 +348,106 @@ contract Pool is UniswapV3ETHSwapper {
 
          }
 
+        function terminalMemberFromPool(address _memberAddress) internal{
+             for (uint256 i = 1; i<=tradeTokens; i++) 
+            {
+                  IERC20 theTradeToken = IERC20(tradeTokenById[i].tokenAddress);
+                uint256 userTradeBalance = tradeTokenBalance[_memberAddress][i];
+                if(userTradeBalance>0){
+                    theTradeToken.transfer(_memberAddress, userTradeBalance);
+               tradeTokenById[i].tokenTotalBalance-=userTradeBalance;
+                delete tradeTokenBalance[_memberAddress][i];
+                }
+      
+                
+            }
+            if(memberTokenBalance[_memberAddress]>0){
+                IERC20 memberPoolToken = IERC20(poolToken);
+                memberPoolToken.transfer(_memberAddress, memberTokenBalance[_memberAddress]);
+                poolTokenAmount -=memberTokenBalance[_memberAddress];
+              delete memberTokenBalance[_memberAddress];
+            }
+            
+            uint256 memberIndex;
+
+            for(uint256 i=1;i<=membersOfPools;i++){
+                if(memberAddress[i] == _memberAddress){
+                    memberIndex = i;
+                    break;
+                }
+            }
+            memberAddress[memberIndex] = memberAddress[membersOfPools];
+
+            delete memberAddress[membersOfPools];
+
+            membersOfPools--;
+        }
+
+        function terminateLastMember(address _memberAddress) internal{
+             for (uint256 i = 1; i<=tradeTokens; i++) 
+            {
+                  IERC20 theTradeToken = IERC20(tradeTokenById[i].tokenAddress);
+                uint256 tradeCurrentBalance = tradeTokenById[i].tokenTotalBalance;
+                if(tradeCurrentBalance>0){
+                     theTradeToken.transfer(_memberAddress, tradeCurrentBalance);
+                      tradeTokenById[i].tokenTotalBalance=0;
+                      delete tradeTokenBalance[_memberAddress][i];
+                }
+      
+                
+            }
+            if(poolTokenAmount>0){
+                IERC20 memberPoolToken = IERC20(poolToken);
+                memberPoolToken.transfer(_memberAddress, poolTokenAmount);
+                poolTokenAmount =0;
+              delete memberTokenBalance[_memberAddress];
+            }
+            
+            uint256 memberIndex;
+
+            for(uint256 i=1;i<=membersOfPools;i++){
+                if(memberAddress[i] == _memberAddress){
+                    memberIndex = i;
+                    break;
+                }
+            }
+            memberAddress[memberIndex] = memberAddress[membersOfPools];
+
+            delete memberAddress[membersOfPools];
+
+            membersOfPools--;
+        }
+
+        function terminateMember(address _memberAddress)internal {
+            if(membersOfPools>1){
+                terminalMemberFromPool(_memberAddress);
+            }
+            else{
+                terminateLastMember(_memberAddress);
+            }
+        }
+         function memberExitPool() isPoolActive public{
+           terminateMember(msg.sender);
+         }
+         function endPool() isPoolActive public {
+            require(msg.sender==poolAdmin,"You are not authorized to perform this action");
+            // for (uint256 i = 1; i<=membersOfPools; i++){
+            while(membersOfPools>0){
+                terminateMember(memberAddress[membersOfPools]);
+                status=poolStatus.Closed;
+                }
+            for (uint256 i = 1; i<=tradeTokens; i++) 
+            {
+               tradeTokenById[i].tradeStatus = Status.Finished;
+            }
+            // }
+         }
+
 
 }
 
 contract PoolManager{
+
 
     uint256 public pools;
     mapping(uint256=>address) public poolbyId;
@@ -353,7 +459,7 @@ contract PoolManager{
         address poolToken;
         uint256 poolTokenAmount;
         uint256 poolTotalTrades;
-        
+        uint256 status;
     }
 
     
@@ -372,6 +478,7 @@ contract PoolManager{
                  totalPools[i-1].poolToken = pool.poolToken();
                  totalPools[i-1].poolTokenAmount = pool.poolTokenAmount();
                  totalPools[i-1].poolTotalTrades = pool.tradeTokens();
+                 totalPools[i-1].status = uint256(pool.status());
             }
             return (totalPools);
 

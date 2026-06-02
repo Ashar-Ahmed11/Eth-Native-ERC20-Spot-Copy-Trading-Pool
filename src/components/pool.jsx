@@ -6,7 +6,6 @@ import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { poolAbi } from '../contracts/pool'
 import { erc20Abi } from '../contracts/erc20'
-import { useBlockNumber } from 'wagmi'
 import { useWatchBlockNumber } from 'wagmi'
 
 const shortenAddress = (address = '') => {
@@ -19,6 +18,11 @@ const statusLabel = (status) => {
   return 'Ongoing'
 }
 
+const poolStatusLabel = (status) => {
+  if (Number(status || 0) === 1) return 'Closed'
+  return 'Active'
+}
+
 const Pool = () => {
   const { pooladdress } = useParams()
   const connectedaddress = useAccount()
@@ -28,6 +32,10 @@ const Pool = () => {
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showDcaModal, setShowDcaModal] = useState(false)
   const [showSellModal, setShowSellModal] = useState(false)
+  const [showClosePoolModal, setShowClosePoolModal] = useState(false)
+  const [showExitPoolModal, setShowExitPoolModal] = useState(false)
+  const [showTradeTokenDropdown, setShowTradeTokenDropdown] = useState(false)
+  const [tradeTokenSearch, setTradeTokenSearch] = useState('')
   const [tradeAmount, setTradeAmount] = useState('')
   const [tradeTokenAddress, setTradeTokenAddress] = useState('')
   const [depositAmount, setDepositAmount] = useState('')
@@ -39,10 +47,6 @@ const Pool = () => {
     hash: txHash,
     confirmations: 1
   })
-
-const { data: blockNumber } = useBlockNumber({ watch: true })
-
-// console.log("the current block number", blockNumber);
 
   useWatchBlockNumber({
         onBlockNumber(blockNumber) {
@@ -62,6 +66,12 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
     abi: poolAbi,
     address: pooladdress,
     functionName: 'poolAdmin'
+  })
+
+  const { data: poolStatus, refetch: refetchPoolStatus } = useReadContract({
+    abi: poolAbi,
+    address: pooladdress,
+    functionName: 'status'
   })
 
   const { data: poolToken } = useReadContract({
@@ -96,7 +106,7 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
     }
   })
 
-  const { data: membersOfPools } = useReadContract({
+  const { data: membersOfPools, refetch: refetchMembers } = useReadContract({
     abi: poolAbi,
     address: pooladdress,
     functionName: 'membersOfPools'
@@ -132,6 +142,12 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
   }, [])
 
   useEffect(() => {
+    if (showTradeModal) return
+    setShowTradeTokenDropdown(false)
+    setTradeTokenSearch('')
+  }, [showTradeModal])
+
+  useEffect(() => {
     if (!writeError) return
     toast.error(writeError.shortMessage || writeError.message || 'Transaction failed')
   }, [writeError])
@@ -164,11 +180,38 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
       setShowSellModal(false)
       setSelectedTradeId(null)
     }
+    if (lastAction === 'closePool') {
+      toast.success('Pool closed successfully')
+      setShowClosePoolModal(false)
+    }
+    if (lastAction === 'exitPool') {
+      toast.success('You exited the pool successfully')
+      setShowExitPoolModal(false)
+    }
+    refetchPoolStatus()
+    refetchMembers()
+    refetchPoolTokenAmount()
     refetchTrades()
-  }, [isConfirmed, lastAction, refetchTrades, refetchAllowance])
+  }, [isConfirmed, lastAction, refetchTrades, refetchAllowance, refetchPoolStatus, refetchMembers, refetchPoolTokenAmount])
 
   const poolTokenMeta = poolToken ? tokenMetaMap[poolToken.toLowerCase()] : null
   const isPoolAdmin = !!connectedaddress?.address && !!poolAdmin && connectedaddress.address.toLowerCase() === poolAdmin.toLowerCase()
+  const isPoolClosed = Number(poolStatus || 0) === 1
+  const tokenOptions = Object.values(tokenMetaMap).sort((a, b) => {
+    const left = (a.symbol || a.name || '').toLowerCase()
+    const right = (b.symbol || b.name || '').toLowerCase()
+    return left.localeCompare(right)
+  })
+  const filteredTradeTokens = tokenOptions.filter((token) => {
+    if (!tradeTokenSearch.trim()) return true
+    const query = tradeTokenSearch.toLowerCase()
+    return (
+      token.symbol?.toLowerCase().includes(query) ||
+      token.name?.toLowerCase().includes(query) ||
+      token.address?.toLowerCase().includes(query)
+    )
+  })
+  const selectedTradeTokenMeta = tradeTokenAddress ? tokenMetaMap[tradeTokenAddress.toLowerCase()] : null
   // console.log("get all trades data", allTrades);
   const handleTrade = () => {
     if (!tradeAmount || !tradeTokenAddress) return
@@ -225,6 +268,33 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
     })
   }
 
+  const handleClosePool = () => {
+    setLastAction('closePool')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'endPool'
+    })
+  }
+
+  const handleExitPool = () => {
+    setLastAction('exitPool')
+    writeContract({
+      abi: poolAbi,
+      address: pooladdress,
+      functionName: 'memberExitPool'
+    })
+  }
+
+  const handleCopy = async (value) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      toast.success('Copied to clipboard')
+    } catch (copyError) {
+      toast.error('Copy failed')
+    }
+  }
+
   const totalTradeBalance = (allTrades || []).reduce((acc, trade) => acc + (trade?.tokenTotalBalance || 0n), 0n)
   const ongoingTrades = (allTrades || []).filter((trade) => trade?.tradeStatus === 0).length
   const poolAvailableBalance = poolTokenAmount || 0n
@@ -240,10 +310,17 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
           <p className="pool-subtitle mb-0">Monitor pool stats and trades</p>
         </div>
         <div className="d-flex align-items-center gap-2">
-          {isPoolAdmin && (
+          {!isPoolClosed && isPoolAdmin && (
             <>
               <button className="btn btn-primary px-4 py-2" onClick={() => setShowTradeModal(true)}>Trade</button>
               <button className="btn btn-outline-primary px-4 py-2" onClick={() => setShowDepositModal(true)}>Deposit</button>
+              <button className="btn btn-outline-danger px-4 py-2" onClick={() => setShowClosePoolModal(true)}>Close Pool</button>
+            </>
+          )}
+          {!isPoolClosed && !isPoolAdmin && (
+            <>
+              <button className="btn btn-outline-primary px-4 py-2" onClick={() => setShowDepositModal(true)}>Deposit</button>
+              <button className="btn btn-outline-danger px-4 py-2" onClick={() => setShowExitPoolModal(true)}>Exit</button>
             </>
           )}
           <Link className="btn btn-outline-primary px-4 py-2" to="/pool-manager">Back to Pools</Link>
@@ -272,20 +349,40 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
                 <p className="pool-meta-label mb-0">{poolTokenMeta?.name || shortenAddress(poolToken)}</p>
               </div>
             </div>
-            <span className="badge text-bg-light text-primary px-3 py-2">Pool #{poolId?.toString() || '0'}</span>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <span className={`badge px-3 py-2 ${isPoolClosed ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-success-subtle text-success-emphasis'}`}>
+                {poolStatusLabel(poolStatus)}
+              </span>
+              <span className="badge text-bg-light text-primary px-3 py-2">Pool #{poolId?.toString() || '0'}</span>
+            </div>
           </div>
           <div className="row g-3 pt-4">
             <div className="col-12 col-md-4">
               <p className="pool-meta-label mb-1">Pool Address</p>
-              <p className="pool-address mb-0">{shortenAddress(pooladdress)}</p>
+              <p className="pool-address mb-0 d-flex align-items-center gap-2 flex-wrap">
+                <span>{shortenAddress(pooladdress)}</span>
+                <button type="button" className="btn pool-copy-btn" onClick={() => handleCopy(pooladdress)} title="Copy pool address">
+                  Copy
+                </button>
+              </p>
             </div>
             <div className="col-12 col-md-4">
               <p className="pool-meta-label mb-1">Pool Admin</p>
-              <p className="pool-address mb-0">{shortenAddress(poolAdmin)}</p>
+              <p className="pool-address mb-0 d-flex align-items-center gap-2 flex-wrap">
+                <span>{shortenAddress(poolAdmin)}</span>
+                <button type="button" className="btn pool-copy-btn" onClick={() => handleCopy(poolAdmin)} title="Copy pool admin">
+                  Copy
+                </button>
+              </p>
             </div>
             <div className="col-12 col-md-4">
               <p className="pool-meta-label mb-1">Pool Token</p>
-              <p className="pool-address mb-0">{shortenAddress(poolToken)}</p>
+              <p className="pool-address mb-0 d-flex align-items-center gap-2 flex-wrap">
+                <span>{shortenAddress(poolToken)}</span>
+                <button type="button" className="btn pool-copy-btn" onClick={() => handleCopy(poolToken)} title="Copy pool token">
+                  Copy
+                </button>
+              </p>
             </div>
           </div>
         </div>
@@ -378,10 +475,15 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
                     </div>
                     <div className="col-6">
                       <p className="pool-meta-label mb-1">Token Address</p>
-                      <p className="pool-address mb-0">{shortenAddress(trade.tokenAddress)}</p>
+                      <p className="pool-address mb-0 d-flex align-items-center gap-2 flex-wrap">
+                        <span>{shortenAddress(trade.tokenAddress)}</span>
+                        <button type="button" className="btn pool-copy-btn" onClick={() => handleCopy(trade.tokenAddress)} title="Copy trade token">
+                          Copy
+                        </button>
+                      </p>
                     </div>
                   </div>
-                  {isPoolAdmin && trade.tradeStatus === 0 && (
+                  {isPoolAdmin && !isPoolClosed && trade.tradeStatus === 0 && (
                     <div className="pool-trade-actions mt-4 pt-3 border-top">
                       <button
                         className="btn pool-action-btn pool-action-btn-dca"
@@ -421,8 +523,77 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label">Trade Token Address</label>
-                    <input className="form-control" value={tradeTokenAddress} onChange={(e) => setTradeTokenAddress(e.target.value)} placeholder="0x..." />
+                    <label className="form-label">Trade Token</label>
+                    <div className="position-relative">
+                      <button
+                        type="button"
+                        className="form-select text-start pool-token-dropdown-toggle"
+                        onClick={() => setShowTradeTokenDropdown((prev) => !prev)}
+                      >
+                        {selectedTradeTokenMeta ? (
+                          <span className="d-flex align-items-center gap-2">
+                            {selectedTradeTokenMeta.logoURI ? (
+                              <img
+                                src={selectedTradeTokenMeta.logoURI}
+                                alt={selectedTradeTokenMeta.symbol || 'token'}
+                                width="24"
+                                height="24"
+                                className="rounded-circle border"
+                              />
+                            ) : (
+                              <span className="token-picker-avatar" />
+                            )}
+                            <span>
+                              <span className="d-block">{selectedTradeTokenMeta.symbol || shortenAddress(tradeTokenAddress)}</span>
+                              <small className="d-block text-muted">{selectedTradeTokenMeta.name || tradeTokenAddress}</small>
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted">Select a token</span>
+                        )}
+                        <span className={`pool-token-dropdown-arrow ${showTradeTokenDropdown ? 'open' : ''}`} aria-hidden="true" />
+                      </button>
+                      {showTradeTokenDropdown && (
+                        <div className="token-picker-menu shadow">
+                          <div className="p-2 border-bottom">
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              placeholder="Search symbols, names, or addresses"
+                              value={tradeTokenSearch}
+                              onChange={(e) => setTradeTokenSearch(e.target.value)}
+                            />
+                          </div>
+                          <div className="token-picker-list">
+                            {filteredTradeTokens.map((token) => (
+                              <button
+                                key={token.address}
+                                type="button"
+                                className={`token-picker-item ${tradeTokenAddress?.toLowerCase() === token.address.toLowerCase() ? 'active' : ''}`}
+                                onClick={() => {
+                                  setTradeTokenAddress(token.address)
+                                  setShowTradeTokenDropdown(false)
+                                  setTradeTokenSearch('')
+                                }}
+                              >
+                                {token.logoURI ? (
+                                  <img src={token.logoURI} alt={token.symbol || 'token'} width="28" height="28" className="rounded-circle border" />
+                                ) : (
+                                  <span className="token-picker-avatar" />
+                                )}
+                                <span className="token-picker-text">
+                                  <span className="token-picker-symbol">{token.symbol || 'Unknown'}</span>
+                                  <span className="token-picker-name">{token.name || token.address}</span>
+                                </span>
+                              </button>
+                            ))}
+                            {filteredTradeTokens.length === 0 && (
+                              <div className="p-3 text-muted small">No matching tokens found.</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="mb-1">
                     <label className="form-label">Trade Amount</label>
@@ -503,6 +674,58 @@ const { data: blockNumber } = useBlockNumber({ watch: true })
             </div>
           </div>
           <div className="modal-backdrop fade show" onClick={() => setShowDepositModal(false)} />
+        </>
+      )}
+
+      {showClosePoolModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Close Pool</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowClosePoolModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <p className="mb-2">Are you sure you want to proceed?</p>
+                  <p className="text-muted mb-0">Performing this action will result in the withdrawal of all tokens for all users and the pool will not be accessible anymore.</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowClosePoolModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={handleClosePool} disabled={isWritePending || isConfirming}>
+                    {isWritePending || isConfirming ? 'Closing...' : 'Close'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowClosePoolModal(false)} />
+        </>
+      )}
+
+      {showExitPoolModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Exit Pool</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowExitPoolModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <p className="mb-2">Are you sure you want to proceed?</p>
+                  <p className="text-muted mb-0">Exiting the pool will withdraw your balances from the pool and remove your access as a member.</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowExitPoolModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={handleExitPool} disabled={isWritePending || isConfirming}>
+                    {isWritePending || isConfirming ? 'Exiting...' : 'Exit'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowExitPoolModal(false)} />
         </>
       )}
 
